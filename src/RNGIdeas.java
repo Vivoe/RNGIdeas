@@ -25,6 +25,7 @@ public class RNGIdeas {
 
 	public static void main(String[] args) throws InvalidFormatException, IOException, InterruptedException {
 		// Get urls to search
+		System.out.println("GITGITGITGITGITGTI");
 		BufferedReader br = new BufferedReader(new FileReader("urlList.txt"));
 
 		{
