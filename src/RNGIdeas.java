@@ -1,5 +1,6 @@
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.LinkedList;
@@ -26,15 +27,7 @@ public class RNGIdeas {
 	public static void main(String[] args) throws InvalidFormatException, IOException, InterruptedException {
 		// Get urls to search
 		System.out.println("GITGITGITGITGITGTI");
-		BufferedReader br = new BufferedReader(new FileReader("urlList.txt"));
-
-		{
-			String line;
-			while ((line = br.readLine()) != null) {
-				URLQuene.add(line);
-			}
-		}
-		br.close();
+		
 
 		ExecutorService exec;
 
@@ -79,6 +72,21 @@ public class RNGIdeas {
 		for (int i = 0; i < numIdeas; i++) {
 			genIdeas("VNN");
 		}
+	}
+	
+	private static void getInitialUrls() throws IOException{
+		BufferedReader br = new BufferedReader(new FileReader("urlList.txt"));
+
+		{
+			String line;
+			while ((line = br.readLine()) != null) {
+				if (line.matches("^//")){
+					continue;
+				}
+				URLQuene.add(line);
+			}
+		}
+		br.close();
 	}
 
 	private static void genIdeas(String types) throws InvalidFormatException {

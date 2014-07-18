@@ -1,1 +1,2 @@
+//This is a list of starting points for the search. Only github links are valid. 
 https://github.com/showcases
