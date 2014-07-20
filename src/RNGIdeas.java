@@ -69,6 +69,7 @@ public class RNGIdeas {
 
 		// Get words from data
 		exec = Executors.newCachedThreadPool();
+		System.out.println(input);
 		for (int i = 0; i < input.size(); i++) {
 			exec.execute(new FindWords(input.get(i)));
 		}
