@@ -2,10 +2,11 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.LinkedList;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import opennlp.tools.cmdline.postag.POSModelLoader;
 import opennlp.tools.postag.POSModel;
@@ -14,36 +15,68 @@ import com.sun.media.sound.InvalidFormatException;
 
 public class RNGIdeas {
 
-	static TreeMap<String, Boolean> visitedURLs = new TreeMap<String, Boolean>();
-	static ArrayList<String> urlQueue = new ArrayList<String>();
-	static ArrayList<String> input = new ArrayList<String>();
-	static ArrayList<String> nouns = new ArrayList<String>();
-	static ArrayList<String> verbs = new ArrayList<String>();
+	static ConcurrentLinkedQueue<String> URLQuene = new ConcurrentLinkedQueue<String>();
+	static LinkedList<String> input = new LinkedList<String>();
+	static LinkedList<String> nouns = new LinkedList<String>();
+	static LinkedList<String> verbs = new LinkedList<String>();
 	static final POSModel model = new POSModelLoader().load(new File("en-pos-maxent.bin"));
-	static final int NUM_IDEAS = 100;
-	static final int NUM_ROUNDS = 3;
-	public static Stream<String> testy(String a) {
-		ArrayList<String> c = new ArrayList<String>();
-		c.add(a);
-		return c.stream();
-	}
+	static final int numIdeas = 100;
+	static final int threadsPerRound = 2500;
 
 	public static void main(String[] args) throws InvalidFormatException, IOException, InterruptedException {
-		
-		//Get starting points from text file.
-		initQueue();
+		// Get urls to search
+		System.out.println("GITGITGITGITGITGTI");
+		BufferedReader br = new BufferedReader(new FileReader("urlList.txt"));
 
-		// Getting data from github
-		for (int i = 0; i < NUM_ROUNDS; i++) {
-			urlQueue = (ArrayList<String>) urlQueue.stream().parallel().flatMap(DataMiner::getData)
-					.collect(Collectors.toList());
+		{
+			String line;
+			while ((line = br.readLine()) != null) {
+				URLQuene.add(line);
+			}
 		}
+		br.close();
 
-		// Processing words
-		input.stream().parallel().forEach(FindWords::tagString);
+		ExecutorService exec;
 
-		//Generating sequences
-		for (int i = 0; i < NUM_IDEAS; i++) {
+		// Get info from site
+		// Take 4 rounds of links
+		int maxIterations = 2;
+		int iterations = 0;
+		while (iterations < maxIterations && (URLQuene.peek() != null)) {
+			System.out.println("XXXXXXXXXXXX");
+
+			exec = Executors.newCachedThreadPool();
+			String url;
+			int numThreads = 0;
+
+			// Dispatch this round of links
+			int cSize = URLQuene.size();
+			for (int i = 0; i < cSize && i < threadsPerRound; i++) {
+				url = URLQuene.poll();
+				numThreads++;
+				exec.execute(new DataMiner(url));
+			}
+
+			// Cleanup round
+			System.out.println(numThreads + " threadcount");
+			exec.shutdown();
+			boolean timedOut = !exec.awaitTermination(numThreads * 3 + 10000, TimeUnit.MILLISECONDS);
+			System.out.println("Success? " + !timedOut);
+			iterations++;
+			System.out.println(iterations + " Iterations ");
+		}
+		System.err.println(URLQuene.toString() + " Done!");
+
+		// Get words from data
+		exec = Executors.newCachedThreadPool();
+		for (int i = 0; i < input.size(); i++) {
+			exec.execute(new FindWords(input.get(i)));
+		}
+		exec.shutdown();
+		exec.awaitTermination(180, TimeUnit.SECONDS);
+
+		// generate ideas
+		for (int i = 0; i < numIdeas; i++) {
 			genIdeas("VNN");
 		}
 	}
@@ -62,18 +95,5 @@ public class RNGIdeas {
 			}
 		}
 		System.out.println(idea);
-	}
-
-	private static void initQueue() throws IOException {
-		BufferedReader br = new BufferedReader(new FileReader("urlList.txt"));
-
-		{
-			String line;
-			while ((line = br.readLine()) != null) {
-				if (!line.startsWith("//"))
-					urlQueue.add(line);
-			}
-		}
-		br.close();
 	}
 }

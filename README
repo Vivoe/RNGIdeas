@@ -1,4 +1,3 @@
-This program scrapes GitHub for project descriptions, then tagges the descriptions and separates the verbs and the nouns. They are then put together randomly in a specified verb/noun sequence.
-Cleaned up with Java8!
+This is the readmeeeee
 This project was built using the Apache OPENLP project, and JSoup.
-
+I have no clue why I'm using a linked list. A vector probably is way better.

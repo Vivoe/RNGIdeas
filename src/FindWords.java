@@ -7,12 +7,20 @@ import opennlp.tools.tokenize.WhitespaceTokenizer;
 import opennlp.tools.util.ObjectStream;
 import opennlp.tools.util.PlainTextByLineStream;
 
-public class FindWords {
+public class FindWords extends Thread {
 
-	public static void tagString(String s){
+	String input;
+
+	public FindWords(String input) {
+		this.input = input;
+//		System.out.println(input);
+	}
+
+	@Override
+	public void run() {
 		POSTaggerME tagger = new POSTaggerME(RNGIdeas.model);
 
-		ObjectStream<String> lineStream = new PlainTextByLineStream(new StringReader(s));
+		ObjectStream<String> lineStream = new PlainTextByLineStream(new StringReader(input));
 
 		String line;
 		try {
@@ -26,10 +34,10 @@ public class FindWords {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
+
 	}
 
-	private static void findWords(String line) {
+	private void findWords(String line) {
 		String[] chunks = line.split(" ");
 
 		for (String s : chunks) {
@@ -37,35 +45,21 @@ public class FindWords {
 				RNGIdeas.nouns.add(getWord(s));
 			} else if (s.contains("_VB")) {
 				if (!s.equals("is") || !s.equals("are")) {
+					synchronized (this) {
 						RNGIdeas.verbs.add(getWord(s));
+					}
 				}
 			}
 		}
 	}
 
 	private static String getWord(String word) {
-		
 		int cut = word.indexOf('_');
-		if (cut < 1){
-			System.err.println("kiwi");
-			return "kiwi";
-		}
 		char ch = word.charAt(cut - 1);
 		if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')) {
-			word = word.substring(0, cut);
+			return word.substring(0, cut);
 		} else {
-			word = word.substring(0, cut - 1);
-		}
-		
-		if (word.equals("")){
-			System.err.println("banana");
-			return "banana";
-		}
-		
-		if (word.charAt(0) == '('){
-			return word.substring(1);
-		} else {
-			return word;
+			return word.substring(0, cut - 1);
 		}
 	}
 

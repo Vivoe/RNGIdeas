@@ -1,47 +1,60 @@
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.stream.Stream;
+import java.util.TreeMap;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-public class DataMiner {
+public class DataMiner extends Thread {
 
-	public static Stream<String> getData(String url) {
-		ArrayList<String> newLinks = new ArrayList<>();
+	private String url;
+	static TreeMap<String, Boolean> visitedURLs = new TreeMap<String, Boolean>();
+
+	public DataMiner(String url) {
+		this.url = url;
+		// System.out.println(url);
+//		System.out.println(visitedURLs.toString());
+	}
+
+	@Override
+	public void run() {
+
 		try {
-			Document doc = Jsoup.connect(url).get();
+			Document doc = getDoc(url);
+//			System.out.println("retrieved " + url);
 			Elements list = doc.select("div.markdown-body, p.repo-description, a[href]");
 
 			for (Element thing : list) {
 
 				if (thing.tagName().equals("a")) {
 					String newLink = thing.attr("href");
-					try{
 					if (newLink.charAt(0) == '/') {
 
-						if (RNGIdeas.visitedURLs.containsKey(newLink)) {
-							continue;
-						} else {
-							RNGIdeas.visitedURLs.put(newLink, true);
+						synchronized (this) {
+							if (visitedURLs.containsKey(newLink)) {
+								continue;
+							} else {
+								visitedURLs.put(newLink, true);
+							}
 						}
 
-						newLinks.add("https://github.com" + newLink);
-					}
-					} catch (StringIndexOutOfBoundsException e){
-						System.err.println("out of bounds "+ newLink);
+						RNGIdeas.URLQuene.add("https://github.com" + newLink);
 					}
 				} else {
-					RNGIdeas.input.add(thing.text());
+
+					synchronized (this) {
+						RNGIdeas.input.add(thing.text());
+					}
 				}
 			}
 		} catch (IOException e) {
-			System.err.println("Unsupported page "+ url);
+			e.printStackTrace();
 		}
-		
-		return newLinks.stream();
 	}
 
+	private static synchronized Document getDoc(String url) throws IOException {
+//		System.out.println("Fetching " + url);
+		return Jsoup.connect(url).get();
+	}
 }
